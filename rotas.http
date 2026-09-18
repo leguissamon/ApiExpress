@@ -1,0 +1,121 @@
+
+### 1. Rota raiz - verifica se a API está no ar
+GET http://localhost:3000/
+
+### Resposta esperada: 200 OK
+### Corpo: API de Tarefas no ar
+
+
+### 2. Listar todas as tarefas
+GET http://localhost:3000/tarefas
+
+### Resposta esperada: 200 OK
+### Corpo: array com todas as tarefas
+
+
+### 3. Listar apenas tarefas concluídas (filtro via query string)
+GET http://localhost:3000/tarefas?concluida=true
+
+### Resposta esperada: 200 OK
+### Corpo: array só com tarefas onde concluida = true
+
+
+### 4. Listar apenas tarefas não concluídas
+GET http://localhost:3000/tarefas?concluida=false
+
+### Resposta esperada: 200 OK
+### Corpo: array só com tarefas onde concluida = false
+
+
+### 5. Buscar tarefa por id (existente)
+GET http://localhost:3000/tarefas/1
+
+### Resposta esperada: 200 OK
+### Corpo: { "id": 1, "titulo": "Estudar Express", "concluida": false }
+
+
+### 6. Buscar tarefa por id (inexistente)
+GET http://localhost:3000/tarefas/999
+
+### Resposta esperada: 404 Not Found
+### Corpo: { "erro": "Tarefa não encontrada" }
+
+
+### 7. Criar nova tarefa (rota simples, sem middlewares - versão inicial do exercício 5)
+POST http://localhost:3000/tarefas
+Content-Type: application/json
+
+{
+    "titulo": "Nova tarefa de teste"
+}
+
+### Resposta esperada: 201 Created
+### Corpo: { "id": 4, "titulo": "Nova tarefa de teste", "concluida": false }
+
+
+### ===================================
+### Exercício de middlewares encadeados
+### POST /tarefas agora passa por: autenticação -> validação -> log
+### ===================================
+
+### Cenário 1 - Sem header Authorization (deve falhar na autenticação)
+POST http://localhost:3000/tarefas
+Content-Type: application/json
+
+{
+    "titulo": "Teste sem token"
+}
+
+### Resposta esperada: 401 Unauthorized
+### Corpo: { "erro": "Token de autenticação ausente" }
+### Terminal: nenhum log é impresso (middleware de autenticação barra antes)
+
+
+### Cenário 2 - Com Authorization, mas sem título (passa na autenticação, falha na validação)
+POST http://localhost:3000/tarefas
+Content-Type: application/json
+Authorization: Bearer token123
+
+{}
+
+### Resposta esperada: 400 Bad Request
+### Corpo: { "erro": "O campo 'titulo' é obrigatório" }
+### Terminal: imprime "Autenticação: OK"
+
+
+### Cenário 3 - Com Authorization e com título (passa em todos os middlewares)
+POST http://localhost:3000/tarefas
+Content-Type: application/json
+Authorization: Bearer token123
+
+{
+    "titulo": "Tarefa criada com middlewares"
+}
+
+### Resposta esperada: 201 Created
+### Corpo: { "id": 4, "titulo": "Tarefa criada com middlewares", "concluida": false }
+### Terminal: imprime, em ordem:
+###   Autenticação: OK
+###   Validação: OK
+###   [LOG] <timestamp> - Nova tarefa sendo criada: Tarefa criada com middlewares
+
+
+//////como saiu no terminal://////
+
+@leguissamon ➜ /workspaces/ApiExpress (main) $ node index.js
+Servidor rodando na porta 3000
+^C
+@leguissamon ➜ /workspaces/ApiExpress (main) $ node index.js
+Servidor rodando na porta 3000
+Autenticação: OK
+Autenticação: OK
+Validação: OK
+[LOG] 2026-09-18T21:12:05.102Z - Nova tarefa sendo criada: Tarefa criada com middlewares
+
+///////////////////////////
+
+### Cenário 4 - Confirmar persistência em memória (GET após o Cenário 3)
+GET http://localhost:3000/tarefas
+
+### Resposta esperada: 200 OK
+### Corpo: array contendo a tarefa "Tarefa criada com middlewares" no final
